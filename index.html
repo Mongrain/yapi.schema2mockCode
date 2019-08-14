@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>yapi</title>
+		<style>
+			body {
+				padding: 0 2%;
+			}
+			textarea {
+				width: 40%;
+				height: 50vh;
+        padding: 5px;
+			}
+			div {
+				display: flex;
+				justify-content: space-between;
+			}
+		</style>
+	</head>
+	<body>
+		<h2>YAPI Schema : code -> mock code</h2>
+		<div>
+			<textarea></textarea>
+			<pre id="result"></pre>
+		</div>
+
+		<script>
+			document.querySelector('textarea').oninput = function(e) {
+				try {
+					const schema = JSON.parse(`${e.target.value}`);
+					document.querySelector('#result').innerHTML = getJsonWrap(
+						schema.properties,
+					);
+				} catch (e) {
+					console.log('not a json', e);
+				}
+			};
+
+			function getMockByType(type) {
+				if (type === 'string') {
+					return 'Random.word(), //';
+				} else if (type === 'boolean') {
+					return 'Random.boolean(), //';
+				} else if (type === 'number') {
+					return 'Random.natural(), //';
+				}
+				return null;
+			}
+
+			function getJson(schema, parent = {}) {
+				Object.entries(schema).map(([key, value]) => {
+					if (value.properties && value.type === 'object') {
+						parent[key] = getJson(value.properties);
+					} else if (
+						value.type === 'array' &&
+						value.items &&
+						value.items.properties
+					) {
+						parent[key] = [getJson(value.items.properties)];
+					} else if (value.type !== 'null') {
+						parent[key] = `${getMockByType(
+							value.type,
+						)}${value.description || ''}`;
+					} else {
+						parent[key] = `null`;
+					}
+				});
+				return parent;
+			}
+
+			function getJsonWrap(schema) {
+				var ret = {};
+				var result = getJson(schema, ret);
+				return JSON.stringify(result.data, null, 2)
+					.replace(/"/g, '')
+					.replace(/\'/g, '"')
+					.replace(/([\w]*\:\s\[)/g, '$1|1-10: [')
+					.replace(/([^\d]\:\ \[)/g, '$1panweizheng')
+					.replace(/\:\ \[panweizheng/g, '')
+					.replace(/([\w].*10)/g, '"$1"')
+					.replace(/\/\/\,/g, '');
+			}
+		</script>
+	</body>
+</html>
