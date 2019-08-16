@@ -4,7 +4,8 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-		<title>yapi</title>
+		<title>yapi schema -> mock</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"></script>
 		<style>
 			body {
 				padding: 0 2%;
@@ -19,6 +20,18 @@
 			div {
 				display: flex;
 			}
+			#bar {
+				height: 0;
+				width: 0;
+				resize: none;
+				resize: none;
+				padding: 0;
+				overflow: hidden;
+				margin: 0;
+				position: relative;
+				top: -50px;
+				z-index: -1;
+			}
 		</style>
 	</head>
 	<body>
@@ -27,14 +40,22 @@
 			<textarea></textarea>
 			<pre id="result"></pre>
 		</div>
+		<button
+			class="copyBtn"
+			data-clipboard-action="copy"
+			data-clipboard-target="#bar"
+		>
+			点击复制转换结果
+		</button>
+		<textarea id="bar"></textarea>
 
 		<script>
 			document.querySelector('textarea').oninput = function(e) {
 				try {
 					const schema = JSON.parse(`${e.target.value}`);
-					document.querySelector('#result').innerHTML = getJsonWrap(
-						schema.properties,
-					);
+					const data = getJsonWrap(schema.properties);
+					document.querySelector('#result').innerHTML = `Mock.mock(${data})`;
+					document.querySelector('#bar').value = `Mock.mock(${data})`;
 				} catch (e) {
 					console.log('not a json', e);
 				}
@@ -48,7 +69,7 @@
 				} else if (type === 'number') {
 					return 'Random.natural(), //';
 				}
-				return null;
+				return `null, //`;
 			}
 
 			function getJson(schema, parent = {}) {
@@ -64,7 +85,7 @@
 					} else if (value.type !== 'null') {
 						parent[key] = `${getMockByType(
 							value.type,
-						)}${value.description || ''}`;
+						)} ${value.description ||  ''}`;
 					} else {
 						parent[key] = `null`;
 					}
@@ -75,15 +96,30 @@
 			function getJsonWrap(schema) {
 				var ret = {};
 				var result = getJson(schema, ret);
-				return JSON.stringify(result.data, null, 2)
+				return JSON.stringify(result, null, 2)
 					.replace(/"/g, '')
 					.replace(/\'/g, '"')
 					.replace(/([\w]*\:\s\[)/g, '$1|1-10: [')
 					.replace(/([^\d]\:\ \[)/g, '$1panweizheng')
 					.replace(/\:\ \[panweizheng/g, '')
 					.replace(/([\w].*10)/g, '"$1"')
-					.replace(/\/\/\,/g, '');
+					.replace(/\/\/\,/g, '')
+					.replace(/([^null])\,\n/g, '$1\n')
+					.replace(/\,\ \/\/\ \n/g, ',\n')
 			}
+
+
+			//实例化 ClipboardJS对象;
+			var copyBtn = new ClipboardJS('.copyBtn');
+
+			copyBtn.on('success', function(e) {
+				// 复制成功
+				e.clearSelection();
+			});
+			copyBtn.on('error', function(e) {
+				//复制失败；
+				console.log(e.action);
+			});
 		</script>
 	</body>
 </html>
